@@ -33,6 +33,8 @@ available. In MGU Store, configure an available network under
 **Settings → Preferred connection** and **Settings → Wi-Fi** (or connect a supported USB/LTE/phone network);
 installing `mgu-uplink` alone does not create an internet connection.
 
+For additional instructions on advertising and approving the camera subnet route, see the [SmartRTSP Tailscale RTSP setup guide](https://www.smartrtsp.com/guides/tailscale-rtsp). Its iOS/Mac client-specific steps do not apply to the MGU; use the forked Tailscale tool described above on the head unit.
+
 The current receiver supports RTSP over TCP, H.264 RTP packetization modes 0/1 (single NAL, STAP-A and FU-A), Basic
 URL credentials (`rtsp://user:password@camera:554/path`), and RTSP Digest authentication (MD5 / MD5-sess with
 `qop=auth`). It does not support RTSPS/TLS, Digest SHA-256, UDP RTP, or non-H.264 camera streams. Configure the
