@@ -119,9 +119,9 @@ This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.m
 
 ## Credits and Thanks
 
-Routing over tailscale provided by IterioDev's [car-apps](https://github.com/IterioDev/car-apps)
-Display method from waliworld's [iDrive8-RideTube](https://github.com/waliworld/iDrive8-RideTube)
-[OpenAI ChatGPT / Codex](https://openai.com)** – Assisted with code generation, debugging, and documentation.
+- Routing over Tailscale provided by IterioDev's [car-apps](https://github.com/IterioDev/car-apps).
+- Display method from waliworld's [iDrive8-RideTube](https://github.com/waliworld/iDrive8-RideTube).
+- [OpenAI ChatGPT / Codex](https://openai.com) – Assisted with code generation, debugging, and documentation.
 
 ## Support
 
