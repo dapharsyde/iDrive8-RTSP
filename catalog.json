@@ -1,0 +1,57 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "rtsp-viewer",
+      "kind": "tool",
+      "title": "RTSP Camera Receiver",
+      "description": "Native RTSP/RTP H.264 receiver using the MGU Intel Media SDK; no FFmpeg dependency.",
+      "version": "0.1.9",
+      "artifact": {
+        "name": "rtsp-viewer@0.1.9.tgz",
+        "size": 460634,
+        "sha256": "16c138b7d7848c2fa18965c48a16b0c08a9710f0b58f7dd8d8963c2ba2c58f8f",
+        "url": "packages/rtsp-viewer@0.1.9.tgz"
+      },
+      "icon": "packages/rtsp-camera.png",
+      "iconSha256": "288b87c65dd73904800f3b3a3b31ed52e24d659ad11fed8c610532cfd423b9a8",
+      "uninstallable": true,
+      "mguHmi": [
+        "ID8"
+      ],
+      "requires": {
+        "mgu-render": "0.6.11"
+      },
+      "mguNeeds": [
+        "renderer"
+      ]
+    },
+    {
+      "id": "rtsp_viewer8",
+      "kind": "app",
+      "title": "RTSP Camera",
+      "description": "RTSP camera viewer; private IPv4 cameras connect through the Tailscale tool SOCKS5 proxy and public cameras use MGU Uplink.",
+      "version": "0.1.2",
+      "artifact": {
+        "name": "rtsp_viewer8@0.1.2.tgz",
+        "size": 1163275,
+        "sha256": "91a11057140f45b5b2ebf5b10907cf0f830a6d0e717800b4507826088935c977",
+        "url": "packages/rtsp_viewer8@0.1.2.tgz"
+      },
+      "icon": "packages/rtsp-camera.png",
+      "iconSha256": "288b87c65dd73904800f3b3a3b31ed52e24d659ad11fed8c610532cfd423b9a8",
+      "build": "unit",
+      "uninstallable": true,
+      "mguHmi": [
+        "ID8"
+      ],
+      "requires": {
+        "rtsp-viewer": "0.1.9",
+        "iteriodev-tailscale": "1.104.9",
+        "mgu-render": "0.6.11",
+        "mgu-uplink": "0.7.0"
+      },
+      "mguInternet": true
+    }
+  ]
+}

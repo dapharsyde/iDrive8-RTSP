@@ -435,7 +435,7 @@ def manifest_for(spec, hmi='ID7'):
 
 
 def make_icon(spec, out):
-    src = os.path.join(APPS, spec['id'], 'icon.png')
+    src = os.path.join(APPS, spec.get('_sourceId', spec['id']), 'icon.png')
     if os.path.exists(src):
         shutil.copy(src, out)
         return
@@ -615,6 +615,7 @@ def build(app_id, language='en', hmi='ID7'):
     src_id = app_id
     spec = json.load(open(os.path.join(APPS, app_id, 'app.json'), encoding='utf-8'))
     spec = localize_spec(spec, language)
+    spec['_sourceId'] = src_id
     spec.setdefault('id', app_id)
     if hmi == 'ID8':
         id8 = spec.get('id8')
@@ -857,3 +858,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

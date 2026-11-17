@@ -112,3 +112,7 @@ and [catalog schema](https://github.com/robertnisipeanu/mgu-store/blob/main/docs
 
 
 
+
+## Publish through MGU Store
+
+This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.md](PUBLISHING.md) for the HTTPS catalog URL, dependencies and USB source details.
