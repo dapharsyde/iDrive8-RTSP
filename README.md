@@ -116,3 +116,15 @@ and [catalog schema](https://github.com/robertnisipeanu/mgu-store/blob/main/docs
 ## Publish through MGU Store
 
 This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.md](PUBLISHING.md) for the HTTPS catalog URL, dependencies and USB source details.
+
+## Credits and Thanks
+
+Routing over tailscale provided by IterioDev's [car-apps](https://github.com/IterioDev/car-apps)
+Display method from waliworld's [iDrive8-RideTube](https://github.com/waliworld/iDrive8-RideTube)
+[OpenAI ChatGPT / Codex](https://openai.com)** – Assisted with code generation, debugging, and documentation.
+
+## Support
+
+If you find this project useful, consider supporting its development:
+
+- **Monero (XMR):** `88UWPj3s3RvHw5CSg9xYvnNxSTDUVAxxEi4BV7PMxwEYfpemYNWg4CuJWSXtUstgFeAvKYifLYSPcYFqwTQYKNt71xoR8si`
