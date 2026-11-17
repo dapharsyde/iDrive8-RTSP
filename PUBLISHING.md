@@ -8,7 +8,7 @@ After pushing the repository to GitHub, add this HTTPS catalog URL as a source i
 
 The catalog uses relative artifact and icon URLs, so GitHub serves them from the same branch. For a USB install, use `dist/rtsp-camera-usb.zip`; its local catalog includes the same Store listing icon and the original-source Tailscale overlay.
 
-The app requires receiver 0.1.9, Tailscale 1.104.9, MGU Render, and MGU Uplink. For private cameras, add the original `IterioDev/car-apps` source in MGU Store so its Tailscale requirement can be resolved. Tailscale remains owned and updated by its original source.
+The app requires receiver 0.1.9, Tailscale 1.104.9, MGU Render, and MGU Uplink. For private cameras, add [my `IterioDev/car-apps` fork](https://github.com/dapharsyde/car-apps) in MGU Store so its Tailscale requirement can be resolved. This fork's Tailscale tool enables userspace subnet-route acceptance and the loopback SOCKS5 proxy used by the receiver. The USB package includes an overlay that lets it update the Store-installed Tailscale component from its original source identity.
 
 The app id remains `rtsp_viewer8` so this catalog can update the existing installation. App ids are global in MGU Store; check for an id collision before publishing or adding this source.
 

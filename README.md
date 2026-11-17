@@ -17,6 +17,7 @@ operation 19). The decoder and MGVF writer were adapted from `native/ytdec`.
 - BMW iDrive 8 MGU, with MGU Store/deploy, `mgu-render` and `mgu-uplink` installed.
 - An active uplink source configured in MGU Store settings (Wi-Fi, USB network/LTE, or phone tethering).
 - Install both the RTSP Camera Receiver tool and RTSP Camera app.
+- For private cameras, install Tailscale tool 1.104.9 from [my IterioDev/car-apps fork](https://github.com/dapharsyde/car-apps). Its userspace subnet-route support and loopback SOCKS5 proxy let the receiver reach cameras advertised by a tailnet subnet router.
 - A reachable RTSP camera with an H.264 video track. The camera and MGU must be on routable networks.
 - The receiver service runs with the system `video` group, opens `/dev/dri/renderD128`, and uses the MGU Intel Media
   SDK (`libmfxhw64`, VA-API). The app controls it through `/run/rtsp-viewer/ctl.sock`.
@@ -25,8 +26,8 @@ The RTSP app is marked for MGU Uplink internet access. Public camera sockets use
 socket UID. For private IPv4 camera addresses, the receiver connects to the Tailscale tool's loopback-only SOCKS5
 proxy (`127.0.0.2`, configured port) so the Tailscale userspace network stack carries the camera traffic; it does
 not route those packets through the head unit's normal IP routes. The Tailscale daemon itself uses MGU Uplink for
-internet access. Receiver 0.1.9 requires Tailscale tool 1.104.9, whose service enables that proxy on port 1055 and
-accepts advertised subnet routes in its userspace network stack. The camera's subnet must be advertised by a
+internet access. Receiver 0.1.9 requires Tailscale tool 1.104.9 from [my fork](https://github.com/dapharsyde/car-apps),
+whose service enables the proxy on port 1055 and accepts advertised subnet routes in its userspace network stack. The camera's subnet must be advertised by a
 reachable Tailscale subnet router and allowed by the tailnet. Hostnames use DNS servers from the uplink lease when
 available. In MGU Store, configure an available network under
 **Settings → Preferred connection** and **Settings → Wi-Fi** (or connect a supported USB/LTE/phone network);
