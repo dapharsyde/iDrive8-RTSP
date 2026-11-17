@@ -1,0 +1,27 @@
+{
+  "id": "rtsp_viewer",
+  "title": "RTSP Camera",
+  "description": "Live RTSP H.264 camera viewer for BMW iDrive 8. Uses MGU Uplink for internet cameras and the Intel Media SDK for decoding.",
+  "id8": {
+    "id": "rtsp_viewer8",
+    "loggingId": "RTSP",
+    "maxDiskUsage": 20971520,
+    "description": "Live RTSP H.264 camera viewer. Requires the receiver, MGU GPU renderer, and MGU Uplink."
+  },
+  "version": "0.1.2",
+  "internet": true,
+  "license": "GPL-3.0-or-later",
+  "vendor": "custom",
+  "loggingId": "RTSP",
+  "iconGlyph": "RT",
+  "screens": [
+    {
+      "name": "VIEW",
+      "kind": "canvas",
+      "title": "RTSP Camera",
+      "hmi": false,
+      "bg": "#080b10",
+      "buttons": [["BTN_CONNECT", "Camera URL"], ["BTN_STOP", "Stop"]]
+    }
+  ]
+}

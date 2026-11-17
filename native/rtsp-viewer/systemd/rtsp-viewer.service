@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[Unit]
+Description=RTSP Camera Receiver for BMW MGU
+RequiresMountsFor=/var/opt
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+SupplementaryGroups=video
+RuntimeDirectory=rtsp-viewer
+RuntimeDirectoryMode=0755
+ExecStart=/var/opt/rtsp-viewer/current/rtsp-viewer --server
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=5
+LimitCORE=1
+
+[Install]
+WantedBy=multi-user.target

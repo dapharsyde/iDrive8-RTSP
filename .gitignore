@@ -1,0 +1,7 @@
+/dist/*
+!/dist/rtsp-camera-usb.zip
+/native/rtsp-viewer/build/
+__pycache__/
+*.py[cod]
+*.o
+/tailscale-tool-fork/
