@@ -132,6 +132,10 @@ and [catalog schema](https://github.com/robertnisipeanu/mgu-store/blob/main/docs
 
 This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.md](PUBLISHING.md) for the HTTPS catalog URL, dependencies and USB source details.
 
+## Testing
+
+This project has been tested successfully on a 2024 G80 on iDrive8.  Tested with cameras ReoLink RLC-420 (requires h264Preview_01_sub) and RLC-510A over Tailscale with subnet routing enabled. 
+
 ## Credits and Thanks
 
 - [ssh root unlock tool](https://github.com/cauliflowermossgrape/idrive7-8-ssh-root) by cauliflowermossgrape 
