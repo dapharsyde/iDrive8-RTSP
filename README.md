@@ -134,6 +134,8 @@ This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.m
 
 ## Credits and Thanks
 
+- [ssh root unlock tool](https://github.com/cauliflowermossgrape/idrive7-8-ssh-root) by cauliflowermossgrape 
+- Internet MGU uplink and [MGU store](https://github.com/robertnisipeanu/mgu-store) by robertnisipeanu 
 - Routing over Tailscale provided by IterioDev's [car-apps](https://github.com/IterioDev/car-apps).
 - Display method from waliworld's [iDrive8-RideTube](https://github.com/waliworld/iDrive8-RideTube).
 - [OpenAI ChatGPT / Codex](https://openai.com) – Assisted with code generation, debugging, and documentation.
