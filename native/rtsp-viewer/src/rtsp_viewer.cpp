@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <csignal>
 #include <cstdio>
@@ -42,6 +43,8 @@ const char *kSocketPath = "/run/rtsp-viewer/ctl.sock";
 volatile sig_atomic_t stopping = 0;
 int status_fd = -1;
 uid_t network_uid = 0;
+bool control_stop_requested = false;
+std::string control_input;
 void stop_signal(int) { stopping = 1; }
 
 class ScopedFsuid {
@@ -114,6 +117,28 @@ std::string lower(std::string s) {
 std::string trim(const std::string &s) {
     size_t a = s.find_first_not_of(" \t\r\n"), b = s.find_last_not_of(" \t\r\n");
     return a == std::string::npos ? "" : s.substr(a, b - a + 1);
+}
+bool read_control_stop() {
+    if (status_fd < 0) return false;
+    char buf[128];
+    for (;;) {
+        ssize_t n = recv(status_fd, buf, sizeof buf, MSG_DONTWAIT);
+        if (n > 0) {
+            control_input.append(buf, (size_t)n);
+            size_t nl;
+            while ((nl = control_input.find('\n')) != std::string::npos) {
+                std::string line = trim(control_input.substr(0, nl));
+                control_input.erase(0, nl + 1);
+                if (line == "STOP") control_stop_requested = true;
+            }
+            if (control_input.size() > 1024) control_input.clear();
+            continue;
+        }
+        if (n == 0) control_stop_requested = true;
+        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) control_stop_requested = true;
+        break;
+    }
+    return control_stop_requested;
 }
 std::string decode_url(const std::string &s) {
     std::string o;
@@ -240,10 +265,69 @@ struct Url {
 
 struct Response { int status = 0; std::map<std::string, std::string> headers; std::string body; };
 
+ssize_t recv_interruptible(int fd, void *buf, size_t length, int flags) {
+    for (;;) {
+        pollfd fds[2] = {{fd, POLLIN | POLLERR | POLLHUP, 0},
+                         {status_fd, POLLIN | POLLRDHUP | POLLERR | POLLHUP, 0}};
+        const nfds_t count = status_fd >= 0 ? 2 : 1;
+        int ready = poll(fds, count, 10000);
+        if (ready < 0) { if (errno == EINTR) continue; return -1; }
+        if (ready == 0) { errno = ETIMEDOUT; return -1; }
+        if (status_fd >= 0 && (fds[1].revents & (POLLRDHUP | POLLERR | POLLHUP | POLLNVAL))) {
+            control_stop_requested = true;
+            errno = ECANCELED; return -1;
+        }
+        if (status_fd >= 0 && (fds[1].revents & POLLIN) && read_control_stop()) {
+            errno = ECANCELED; return -1;
+        }
+        if (fds[0].revents & POLLNVAL) { errno = EBADF; return -1; }
+        if (fds[0].revents & (POLLIN | POLLERR | POLLHUP)) return recv(fd, buf, length, flags);
+    }
+}
+
 bool read_exact(int fd, void *buf, size_t n) {
     uint8_t *p = (uint8_t *)buf;
-    while (n) { ssize_t r = recv(fd, p, n, 0); if (r <= 0) return false; p += r; n -= (size_t)r; }
+    while (n) {
+        ssize_t r = recv_interruptible(fd, p, n, 0);
+        if (r <= 0) { if (r == 0) errno = ECONNRESET; return false; }
+        p += r; n -= (size_t)r;
+    }
     return true;
+}
+
+std::string read_failure(const char *what) {
+    if (errno == ECANCELED) return "Stream cancelled by app";
+    if (errno == ETIMEDOUT) return std::string("Timed out while reading ") + what;
+    return std::string("Camera disconnected while reading ") + what;
+}
+
+bool read_rtsp_header_byte(int fd, char *out, std::string *err) {
+    for (;;) {
+        ssize_t n = recv_interruptible(fd, out, 1, 0);
+        if (n <= 0) {
+            *err = errno == ECANCELED ? "Stream cancelled by app" :
+                   errno == ETIMEDOUT ? "RTSP response timed out waiting for headers" :
+                   "RTSP server disconnected while reading response headers";
+            return false;
+        }
+        if ((uint8_t)*out != '$') return true;
+
+        // RTP/RTCP interleaved over the RTSP TCP connection may arrive while a
+        // response is pending. Skip the complete $ channel/length/payload frame
+        // so binary bytes cannot be mistaken for an RTSP status line or header.
+        // The frame length is uint16-bounded and payloads are drained in chunks;
+        // do not cap their cumulative size because high-bitrate streams can
+        // exceed 16 MiB while a camera is still completing its RTSP response.
+        uint8_t frame[3];
+        if (!read_exact(fd, frame, sizeof frame)) { *err = "Truncated interleaved frame in RTSP response headers"; return false; }
+        size_t length = ((size_t)frame[1] << 8) | frame[2];
+        uint8_t discard[4096];
+        while (length) {
+            size_t chunk = std::min(length, sizeof discard);
+            if (!read_exact(fd, discard, chunk)) { *err = "Truncated interleaved payload in RTSP response headers"; return false; }
+            length -= chunk;
+        }
+    }
 }
 bool send_exact(int fd, const void *buf, size_t n) {
     const uint8_t *p = (const uint8_t *)buf;
@@ -308,12 +392,16 @@ bool connect_tailscale_socks5(const Url &u, int *out_fd, std::string *err) {
 }
 
 bool read_response(int fd, Response *out, std::string *err) {
-    // Read exactly through the response body, leaving any interleaved RTP bytes in the socket.
+    // Read through the response body, skipping interleaved frames that arrive
+    // before/during the RTSP headers to keep the control stream aligned.
     *out = Response{};
     std::string data; char c; size_t split = std::string::npos;
     while ((split = data.find("\r\n\r\n")) == std::string::npos) {
-        ssize_t n = recv(fd, &c, 1, 0); if (n <= 0) { *err = "RTSP server disconnected"; return false; }
-        data.push_back(c); if (data.size() > 65536) { *err = "RTSP response headers too large"; return false; }
+        if (!read_rtsp_header_byte(fd, &c, err)) return false;
+        // Some camera firmware adds large vendor-specific metadata to DESCRIBE
+        // and authentication responses. Keep a generous but finite bound so
+        // these headers are accepted without allowing unbounded allocation.
+        data.push_back(c); if (data.size() > 1024 * 1024) { *err = "RTSP response headers exceed 1 MiB"; return false; }
     }
     std::istringstream hs(data.substr(0, split)); std::string line;
     while (std::getline(hs, line) && trim(line).empty()) {}
@@ -525,6 +613,13 @@ public:
         }
         return true;
     }
+    bool teardown(std::string *err) {
+        if (fd_ < 0 || session_.empty()) return true;
+        Response r;
+        const bool ok = request("TEARDOWN", host_.request_url(), &r, err);
+        session_.clear();
+        return ok;
+    }
     int fd() const { return fd_; }
     int rtp_channel() const { return rtp_channel_; }
     void close() { if (fd_ >= 0) { ::shutdown(fd_, SHUT_RDWR); ::close(fd_); fd_ = -1; } }
@@ -600,13 +695,41 @@ void append_nal(std::vector<uint8_t> &au, const uint8_t *p, size_t n) {
     au.insert(au.end(), sc, sc + sizeof sc); au.insert(au.end(), p, p + n);
 }
 
+void inspect_access_unit(const std::vector<uint8_t> &au, bool *has_idr, bool *has_sps, bool *has_pps,
+                         std::vector<uint8_t> *params) {
+    *has_idr = false;
+    *has_sps = *has_pps = false;
+    for (size_t i = 0; i + 3 < au.size();) {
+        size_t start = std::string::npos, prefix = 0;
+        if (au[i] == 0 && au[i + 1] == 0 && au[i + 2] == 1) start = i, prefix = 3;
+        else if (i + 4 < au.size() && au[i] == 0 && au[i + 1] == 0 && au[i + 2] == 0 && au[i + 3] == 1) start = i, prefix = 4;
+        if (start == std::string::npos) { ++i; continue; }
+        const size_t header = start + prefix;
+        size_t end = au.size();
+        for (size_t j = header + 1; j + 3 < au.size(); ++j) {
+            if (au[j] == 0 && au[j + 1] == 0 &&
+                (au[j + 2] == 1 || (au[j + 2] == 0 && au[j + 3] == 1))) { end = j; break; }
+        }
+        if (header < au.size()) {
+            const uint8_t type = au[header] & 0x1f;
+            if (type == 5) *has_idr = true;
+            if (type == 7 || type == 8) {
+                if (type == 7) *has_sps = true;
+                if (type == 8) *has_pps = true;
+                params->insert(params->end(), au.begin() + start, au.begin() + end);
+            }
+        }
+        i = end;
+    }
+}
+
 bool recv_interleaved_packet(int fd, int rtp_channel, std::vector<uint8_t> *packet, bool *rtp, std::string *err) {
     uint8_t first;
-    if (!read_exact(fd, &first, 1)) { *err = "Camera stream disconnected"; return false; }
+    if (!read_exact(fd, &first, 1)) { *err = read_failure("interleaved RTP packet"); return false; }
     if (first == '$') {
-        uint8_t rest[3]; if (!read_exact(fd, rest, 3)) { *err = "Truncated interleaved packet"; return false; }
+        uint8_t rest[3]; if (!read_exact(fd, rest, 3)) { *err = read_failure("interleaved packet header"); return false; }
         uint16_t n = (uint16_t)((rest[1] << 8) | rest[2]); packet->resize(n);
-        if (!read_exact(fd, packet->data(), n)) { *err = "Truncated RTP payload"; return false; }
+        if (!read_exact(fd, packet->data(), n)) { *err = read_failure("RTP payload"); return false; }
         *rtp = rest[0] == rtp_channel; return true;
     }
     // An RTSP keepalive/notification arrived between media packets. Drain one response line block.
@@ -680,6 +803,8 @@ int serve() {
         if (!ready) continue;
         int client = accept(server, nullptr, nullptr); if (client < 0) continue;
         status_fd = client;
+        control_stop_requested = false;
+        control_input.clear();
         struct ucred peer{}; socklen_t peer_len = sizeof peer;
         if (getsockopt(client, SOL_SOCKET, SO_PEERCRED, &peer, &peer_len) != 0 || peer.uid == 0) {
             event("Cannot identify the camera app's non-root network uid");
@@ -711,47 +836,105 @@ int run_stream(const std::string &raw_url) {
 
     ytdec::Mgvf out; std::string warn;
     const char *vpath = getenv("MGU_RTSP_VIDEO");
-    if (!out.open(vpath && *vpath ? vpath : kVideoPath, 1280, 320, 3, &err, &warn)) { event(err); return 1; }
+    if (!out.open(vpath && *vpath ? vpath : kVideoPath, 1280, 480, 3, &err, &warn)) { event(err); return 1; }
     woc::Decoder decoder;
-    // Fit each camera frame inside the 4:1 MGU video layer. This keeps the
-    // source aspect ratio and uses black side bars for narrower camera video.
-    if (!decoder.init("/dev/dri/renderD128", 1280, 320, false, &err)) { event(err); out.close(); unlink(vpath && *vpath ? vpath : kVideoPath); return 1; }
+    // Fit each camera frame inside the 8:3 MGU video layer. This matches the
+    // full-height app canvas and keeps narrower camera video undistorted.
+    if (!decoder.init("/dev/dri/renderD128", 1280, 480, false, &err)) { event(err); out.close(); unlink(vpath && *vpath ? vpath : kVideoPath); return 1; }
     if (!warn.empty()) event(warn);
     event("Connected; waiting for H.264 frames");
 
-    std::vector<uint8_t> au, packet; uint32_t au_ts = 0; int64_t first_pts = -1; bool params_sent = false;
+    std::vector<uint8_t> au, packet; uint32_t au_ts = 0; int64_t first_pts = -1;
+    bool decoder_started = false;
+    std::vector<uint8_t> inband_params;
+    auto last_frame = std::chrono::steady_clock::now();
+    unsigned stall_restarts = 0;
+    auto finish_access_unit = [&]() {
+        if (au.empty()) return;
+        bool has_idr = false, has_sps = false, has_pps = false;
+        std::vector<uint8_t> found_params;
+        inspect_access_unit(au, &has_idr, &has_sps, &has_pps, &found_params);
+        if (!found_params.empty() && sps_pps.empty() && inband_params.size() + found_params.size() <= 256 * 1024)
+            inband_params.insert(inband_params.end(), found_params.begin(), found_params.end());
+        if (has_idr && sps_pps.empty() && !inband_params.empty()) sps_pps.swap(inband_params);
+        if (!decoder_started) {
+            if (!has_idr) { au.clear(); return; }
+            // A new RTSP PLAY can begin in the middle of a GOP. Start the
+            // decoder only on an IDR, with fresh parameter sets, so stale
+            // reference pictures from before Stop cannot appear garbled.
+            // Prefer SDP parameter sets when present; cameras may repeat them
+            // in the IDR access unit, and feeding both copies can confuse MSDK.
+            decoder_started = true;
+        }
+        // Repeat cached parameter sets at later IDRs if this GOP omits them.
+        // That lets MSDK rebuild its sequence after a decoder restart.
+        if (has_idr && !(has_sps && has_pps) && !sps_pps.empty())
+            au.insert(au.begin(), sps_pps.begin(), sps_pps.end());
+        int64_t pts = first_pts < 0 ? 0 : (int64_t)(uint32_t)(au_ts - (uint32_t)first_pts) / 90;
+        if (first_pts < 0) first_pts = (int64_t)au_ts;
+        std::string de;
+        decoder.feed(au.data(), au.size(), [&](const woc::VideoFrame &f) {
+            if (f.y && f.uv && f.w == out.w() && f.h == out.h()) {
+                ytdec::nv12_to_i420(f.y, f.uv, f.pitch, f.w, f.h, out.begin()); out.commit();
+                last_frame = std::chrono::steady_clock::now();
+                stall_restarts = 0;
+            }
+        }, &de, true, true, pts);
+        if (!de.empty()) event(de);
+        au.clear();
+    };
     while (!stopping) {
-        pollfd fds[2] = {{rtsp.fd(), POLLIN, 0}, {status_fd, POLLHUP | POLLERR, 0}};
+        pollfd fds[2] = {{rtsp.fd(), POLLIN, 0}, {status_fd, POLLIN | POLLRDHUP | POLLHUP | POLLERR, 0}};
         int ready = poll(fds, status_fd >= 0 ? 2 : 1, 250);
         if (ready < 0) { if (errno == EINTR) continue; err = std::string("RTSP poll failed: ") + strerror(errno); event(err); break; }
+        if (decoder_started && std::chrono::steady_clock::now() - last_frame > std::chrono::seconds(15)) {
+            if (stall_restarts == 0) {
+                event("H.264 decoder stalled; restarting it and waiting for the next keyframe");
+                decoder.shutdown();
+                if (!decoder.init("/dev/dri/renderD128", 1280, 480, false, &err)) {
+                    event("Could not restart H.264 decoder: " + err);
+                    break;
+                }
+                decoder_started = false;
+                inband_params.clear();
+                au.clear();
+                ++stall_restarts;
+                last_frame = std::chrono::steady_clock::now();
+            } else {
+                event("H.264 decoder stopped producing video frames after a restart");
+                break;
+            }
+        }
         if (!ready) continue;
-        if (status_fd >= 0 && (fds[1].revents & (POLLHUP | POLLERR | POLLNVAL))) break;
+        if (status_fd >= 0 && (fds[1].revents & (POLLRDHUP | POLLHUP | POLLERR | POLLNVAL))) {
+            control_stop_requested = true;
+            break;
+        }
+        if (status_fd >= 0 && (fds[1].revents & POLLIN) && read_control_stop()) break;
         if (!(fds[0].revents & POLLIN)) {
             err = (fds[0].revents & POLLNVAL) ? "RTSP socket became invalid" : "RTSP connection closed by camera";
             event(err); break;
         }
         bool is_rtp = false;
-        if (!recv_interleaved_packet(rtsp.fd(), rtsp.rtp_channel(), &packet, &is_rtp, &err)) { if (!stopping) event(err); break; }
+        if (!recv_interleaved_packet(rtsp.fd(), rtsp.rtp_channel(), &packet, &is_rtp, &err)) {
+            if (!stopping && err != "Stream cancelled by app") event(err);
+            break;
+        }
         if (!is_rtp) continue;
         bool marker = false; uint32_t ts = 0;
-        size_t before = au.size();
-        if (!decode_rtp(packet, payload, &au, &marker, &ts)) continue;
-        if (au.size() == before) continue;
+        std::vector<uint8_t> packet_au;
+        if (!decode_rtp(packet, payload, &packet_au, &marker, &ts) || packet_au.empty()) continue;
+        // Some cameras omit RTP's marker bit. A timestamp change still marks
+        // the end of the preceding H.264 access unit; use both signals so those
+        // streams keep feeding frames instead of accumulating forever.
+        if (!au.empty() && ts != au_ts) finish_access_unit();
+        au.insert(au.end(), packet_au.begin(), packet_au.end());
         au_ts = ts;
-        if (marker) {
-            if (!params_sent && !sps_pps.empty()) { au.insert(au.begin(), sps_pps.begin(), sps_pps.end()); params_sent = true; }
-            int64_t pts = first_pts < 0 ? 0 : (int64_t)(uint32_t)(au_ts - (uint32_t)first_pts) / 90;
-            if (first_pts < 0) first_pts = (int64_t)au_ts;
-            std::string de;
-            decoder.feed(au.data(), au.size(), [&](const woc::VideoFrame &f) {
-                if (f.y && f.uv && f.w == out.w() && f.h == out.h()) {
-                    ytdec::nv12_to_i420(f.y, f.uv, f.pitch, f.w, f.h, out.begin()); out.commit();
-                }
-            }, &de, true, true, pts);
-            if (!de.empty()) event(de);
-            au.clear();
-        }
+        if (marker) finish_access_unit();
     }
+    std::string teardown_error;
+    if (!rtsp.teardown(&teardown_error) && !control_stop_requested && !teardown_error.empty())
+        std::cerr << "RTSP TEARDOWN: " << teardown_error << '\n';
     decoder.shutdown(); out.close(); unlink(vpath && *vpath ? vpath : kVideoPath);
     return 0;
 }

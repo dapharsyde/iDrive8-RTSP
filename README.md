@@ -26,7 +26,7 @@ The RTSP app is marked for MGU Uplink internet access. Public camera sockets use
 socket UID. For private IPv4 camera addresses, the receiver connects to the Tailscale tool's loopback-only SOCKS5
 proxy (`127.0.0.2`, configured port) so the Tailscale userspace network stack carries the camera traffic; it does
 not route those packets through the head unit's normal IP routes. The Tailscale daemon itself uses MGU Uplink for
-internet access. Receiver 0.1.9 requires Tailscale tool 1.104.9 from [my fork](https://github.com/dapharsyde/car-apps),
+internet access. Receiver 0.1.21 requires Tailscale tool 1.104.9 from [my fork](https://github.com/dapharsyde/car-apps),
 whose service enables the proxy on port 1055 and accepts advertised subnet routes in its userspace network stack. The camera's subnet must be advertised by a
 reachable Tailscale subnet router and allowed by the tailnet. Hostnames use DNS servers from the uplink lease when
 available. In MGU Store, configure an available network under
@@ -68,7 +68,7 @@ With Python 3, from the project root:
 python3 kit/tools/build.py rtsp_viewer --hmi ID8
 ```
 
-The source package is `dist/src/rtsp_viewer8@0.1.2.tgz`. Install/update the receiver tool and app; then open **RTSP Camera**,
+The source package is `dist/src/rtsp_viewer8@0.1.6.tgz`. Install/update the receiver tool and app; then open **RTSP Camera**,
 enter an `rtsp://` URL and choose **Connect**. **Stop** closes the receiver. The last URL is saved under the app's
 data directory with mode 0600.
 
@@ -131,3 +131,14 @@ This project includes a schema 2 catalog for Store publishing. See [PUBLISHING.m
 If you find this project useful, consider supporting its development:
 
 - **Monero (XMR):** `88UWPj3s3RvHw5CSg9xYvnNxSTDUVAxxEi4BV7PMxwEYfpemYNWg4CuJWSXtUstgFeAvKYifLYSPcYFqwTQYKNt71xoR8si`
+
+
+
+
+
+
+
+
+
+
+

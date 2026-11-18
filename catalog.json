@@ -6,12 +6,12 @@
       "kind": "tool",
       "title": "RTSP Camera Receiver",
       "description": "Native RTSP/RTP H.264 receiver using the MGU Intel Media SDK; no FFmpeg dependency.",
-      "version": "0.1.9",
+      "version": "0.1.21",
       "artifact": {
-        "name": "rtsp-viewer@0.1.9.tgz",
-        "size": 460634,
-        "sha256": "16c138b7d7848c2fa18965c48a16b0c08a9710f0b58f7dd8d8963c2ba2c58f8f",
-        "url": "packages/rtsp-viewer@0.1.9.tgz"
+        "size": 470379,
+        "url": "packages/rtsp-viewer@0.1.21.tgz",
+        "sha256": "c6fdbba2a142a993a3503f09448ede0339b7a81afaf626534ce9c4d47be99c0c",
+        "name": "rtsp-viewer@0.1.21.tgz"
       },
       "icon": "packages/rtsp-camera.png",
       "iconSha256": "288b87c65dd73904800f3b3a3b31ed52e24d659ad11fed8c610532cfd423b9a8",
@@ -24,19 +24,20 @@
       },
       "mguNeeds": [
         "renderer"
-      ]
+      ],
+      "sha256": "c6fdbba2a142a993a3503f09448ede0339b7a81afaf626534ce9c4d47be99c0c"
     },
     {
       "id": "rtsp_viewer8",
       "kind": "app",
       "title": "RTSP Camera",
       "description": "RTSP camera viewer; private IPv4 cameras connect through the Tailscale tool SOCKS5 proxy and public cameras use MGU Uplink.",
-      "version": "0.1.2",
+      "version": "0.1.6",
       "artifact": {
-        "name": "rtsp_viewer8@0.1.2.tgz",
-        "size": 1163275,
-        "sha256": "91a11057140f45b5b2ebf5b10907cf0f830a6d0e717800b4507826088935c977",
-        "url": "packages/rtsp_viewer8@0.1.2.tgz"
+        "size": 1163493,
+        "url": "packages/rtsp_viewer8@0.1.6.tgz",
+        "sha256": "2068d0008e3875bb2cb02b2d376c6ceff724696be7d0cf33ef2036d1e96d7a32",
+        "name": "rtsp_viewer8@0.1.6.tgz"
       },
       "icon": "packages/rtsp-camera.png",
       "iconSha256": "288b87c65dd73904800f3b3a3b31ed52e24d659ad11fed8c610532cfd423b9a8",
@@ -46,10 +47,10 @@
         "ID8"
       ],
       "requires": {
-        "rtsp-viewer": "0.1.9",
         "iteriodev-tailscale": "1.104.9",
         "mgu-render": "0.6.11",
-        "mgu-uplink": "0.7.0"
+        "mgu-uplink": "0.7.0",
+        "rtsp-viewer": "0.1.21"
       },
       "mguInternet": true
     }

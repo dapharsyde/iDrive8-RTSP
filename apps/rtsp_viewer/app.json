@@ -8,7 +8,7 @@
     "maxDiskUsage": 20971520,
     "description": "Live RTSP H.264 camera viewer. Requires the receiver, MGU GPU renderer, and MGU Uplink."
   },
-  "version": "0.1.2",
+  "version": "0.1.6",
   "internet": true,
   "license": "GPL-3.0-or-later",
   "vendor": "custom",
@@ -20,8 +20,9 @@
       "kind": "canvas",
       "title": "RTSP Camera",
       "hmi": false,
+      "fill": true,
       "bg": "#080b10",
-      "buttons": [["BTN_CONNECT", "Camera URL"], ["BTN_STOP", "Stop"]]
+      "buttons": []
     }
   ]
 }

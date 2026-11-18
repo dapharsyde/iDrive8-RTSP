@@ -1,7 +1,7 @@
 {
   "id": "rtsp-viewer",
   "kind": "tool",
-  "version": "0.1.9",
+  "version": "0.1.21",
   "title": "RTSP Camera Receiver",
   "description": "Native RTSP/RTP H.264 receiver using the MGU Intel Media SDK; no FFmpeg dependency.",
   "license": "GPL-3.0-or-later",

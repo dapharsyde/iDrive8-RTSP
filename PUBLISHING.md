@@ -8,7 +8,7 @@ After pushing the repository to GitHub, add this HTTPS catalog URL as a source i
 
 The catalog uses relative artifact and icon URLs, so GitHub serves them from the same branch. For a USB install, use `dist/rtsp-camera-usb.zip`; its local catalog includes the same Store listing icon and the original-source Tailscale overlay.
 
-The app requires receiver 0.1.9, Tailscale 1.104.9, MGU Render, and MGU Uplink. For private cameras, add [my `IterioDev/car-apps` fork](https://github.com/dapharsyde/car-apps) in MGU Store so its Tailscale requirement can be resolved. This fork's Tailscale tool enables userspace subnet-route acceptance and the loopback SOCKS5 proxy used by the receiver. The USB package includes an overlay that lets it update the Store-installed Tailscale component from its original source identity.
+The app requires receiver 0.1.21, Tailscale 1.104.9, MGU Render, and MGU Uplink. For private cameras, add [my `IterioDev/car-apps` fork](https://github.com/dapharsyde/car-apps) in MGU Store so its Tailscale requirement can be resolved. This fork's Tailscale tool enables userspace subnet-route acceptance and the loopback SOCKS5 proxy used by the receiver. The USB package includes an overlay that lets it update the Store-installed Tailscale component from its original source identity.
 
 The app id remains `rtsp_viewer8` so this catalog can update the existing installation. App ids are global in MGU Store; check for an id collision before publishing or adding this source.
 
@@ -16,6 +16,18 @@ No BMW `oap-sdk` is included in the source repository or app package. The head u
 
 ## GitHub Releases layout
 
-The checked-in `catalog.json` uses paths relative to itself for the HTTPS catalog URL and USB folder layout. If publishing through MGU Store's **Releases** channel instead, create a GitHub Release named `catalog` and attach the two `.tgz` files and `rtsp-camera.png`. In that release's `catalog.json`, change each artifact `url` to its absolute release download URL, such as `https://github.com/dapharsyde/iDrive8-RTSP/releases/download/catalog/rtsp_viewer8@0.1.2.tgz`, and set `icon` to `rtsp-camera.png`. Keep the artifact and icon hashes unchanged. Upload this release-specific catalog as the release asset `catalog.json`.
+The checked-in `catalog.json` uses paths relative to itself for the HTTPS catalog URL and USB folder layout. If publishing through MGU Store's **Releases** channel instead, create a GitHub Release named `catalog` and attach the two `.tgz` artifacts currently listed in `catalog.json` and `rtsp-camera.png`. In that release's `catalog.json`, change each artifact `url` to its absolute release download URL, such as `https://github.com/dapharsyde/iDrive8-RTSP/releases/download/catalog/rtsp_viewer8@0.1.6.tgz`, and set `icon` to `rtsp-camera.png`. Keep the artifact and icon hashes unchanged. Upload this release-specific catalog as the release asset `catalog.json`.
 
 For a private GitHub repository, use the GitHub Releases source with the Store's authenticated GitHub connection; the raw HTTPS catalog URL above is intended for a public repository.
+
+
+
+
+
+
+
+
+
+
+
+
