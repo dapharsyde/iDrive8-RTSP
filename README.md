@@ -9,6 +9,12 @@ RideTube and reuses RideTube's Intel Media SDK decoder:
 3. NV12 frames are written as I420 to `/dev/shm/mgu-video-rtsp` in MGU Video Frame (MGVF) format.
 4. The app registers the shared frame file with `mgu-render` and draws renderer video layer 1.
 
+## UI preview
+
+This image is AI-rendered, not captured from an actual head unit, but it closely matches the app's UI.
+
+![AI-rendered RTSP Camera UI preview](docs/images/rtsp-camera-ui-ai-render.jpg)
+
 The display method was found in RideTube's `apps/jap_ridetube/main.js` (`gpu.video`, `gpu.dropVideo`, canvas `video`,
 operation 19). The decoder and MGVF writer were adapted from `native/ytdec`.
 
