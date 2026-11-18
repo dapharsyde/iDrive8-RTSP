@@ -32,12 +32,12 @@
       "kind": "app",
       "title": "RTSP Camera",
       "description": "RTSP camera viewer; private IPv4 cameras connect through the Tailscale tool SOCKS5 proxy and public cameras use MGU Uplink.",
-      "version": "0.1.6",
+      "version": "0.1.13",
       "artifact": {
-        "size": 1163493,
-        "url": "packages/rtsp_viewer8@0.1.6.tgz",
-        "sha256": "2068d0008e3875bb2cb02b2d376c6ceff724696be7d0cf33ef2036d1e96d7a32",
-        "name": "rtsp_viewer8@0.1.6.tgz"
+        "size": 1166720,
+        "url": "packages/rtsp_viewer8@0.1.13.tgz",
+        "sha256": "01420c856af5b51c1e4c2f9cdda0860fdee4c185c69163a12a29e44404c61550",
+        "name": "rtsp_viewer8@0.1.13.tgz"
       },
       "icon": "packages/rtsp-camera.png",
       "iconSha256": "288b87c65dd73904800f3b3a3b31ed52e24d659ad11fed8c610532cfd423b9a8",

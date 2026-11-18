@@ -16,7 +16,7 @@ No BMW `oap-sdk` is included in the source repository or app package. The head u
 
 ## GitHub Releases layout
 
-The checked-in `catalog.json` uses paths relative to itself for the HTTPS catalog URL and USB folder layout. If publishing through MGU Store's **Releases** channel instead, create a GitHub Release named `catalog` and attach the two `.tgz` artifacts currently listed in `catalog.json` and `rtsp-camera.png`. In that release's `catalog.json`, change each artifact `url` to its absolute release download URL, such as `https://github.com/dapharsyde/iDrive8-RTSP/releases/download/catalog/rtsp_viewer8@0.1.6.tgz`, and set `icon` to `rtsp-camera.png`. Keep the artifact and icon hashes unchanged. Upload this release-specific catalog as the release asset `catalog.json`.
+The checked-in `catalog.json` uses paths relative to itself for the HTTPS catalog URL and USB folder layout. If publishing through MGU Store's **Releases** channel instead, create a GitHub Release named `catalog` and attach the two `.tgz` artifacts currently listed in `catalog.json` and `rtsp-camera.png`. In that release's `catalog.json`, change each artifact `url` to its absolute release download URL, such as `https://github.com/dapharsyde/iDrive8-RTSP/releases/download/catalog/rtsp_viewer8@0.1.13.tgz`, and set `icon` to `rtsp-camera.png`. Keep the artifact and icon hashes unchanged. Upload this release-specific catalog as the release asset `catalog.json`.
 
 For a private GitHub repository, use the GitHub Releases source with the Store's authenticated GitHub connection; the raw HTTPS catalog URL above is intended for a public repository.
 

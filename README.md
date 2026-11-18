@@ -42,8 +42,10 @@ camera for H.264. Percent-encode reserved characters in the username/password. B
 by plain RTSP, so use Basic only on a trusted network.
 
 The RTSP path does not determine the video codec by itself. Some Reolink models return H.265 from the main stream;
-try `/h264Preview_01_sub` or set that camera stream's encoding to H.264. The receiver reports the codec advertised
-by the camera's SDP when it cannot find an H.264 track.
+try `/h264Preview_01_sub` or set that camera stream's encoding to H.264. High-resolution main streams can also produce
+frames that are too large for the head unit to decode reliably. If video freezes or fails to appear, try changing
+`/h264Preview_01_main` to `/h264Preview_01_sub` to use the lower-resolution substream. The receiver reports the codec
+advertised by the camera's SDP when it cannot find an H.264 track.
 
 ## Build the native receiver
 
@@ -68,9 +70,13 @@ With Python 3, from the project root:
 python3 kit/tools/build.py rtsp_viewer --hmi ID8
 ```
 
-The source package is `dist/src/rtsp_viewer8@0.1.6.tgz`. Install/update the receiver tool and app; then open **RTSP Camera**,
-enter an `rtsp://` URL and choose **Connect**. **Stop** closes the receiver. The last URL is saved under the app's
-data directory with mode 0600.
+The source package is `dist/src/rtsp_viewer8@0.1.13.tgz`. Install/update the receiver tool and app, then open **RTSP Camera**.
+Use **Add Camera** to save a camera name and `rtsp://` URL. Select a saved camera from the dropdown to connect.
+Use the pencil icon beside the camera selector to edit its name or URL, or the trash icon beside it to delete the selected
+camera after confirming. Use **Stop stream** to close the receiver. Camera names and URLs are saved
+under the app's data directory with mode 0600.
+When editing a name or URL, tap in the keyboard's text field to move the cursor for inline changes.
+On upgrade, a URL saved by older versions is retained as the first choice, named **Cam1**.
 
 ## Limits and validation
 

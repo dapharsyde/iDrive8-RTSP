@@ -37,6 +37,9 @@ function keyboardSheet(opts) {
     const sh = {
         title: o.title || 'Keyboard',
         text: String(o.text || '').slice(0, MAX_LEN),
+        cursor: String(o.text || '').slice(0, MAX_LEN).length,
+        viewStart: 0,
+        viewEnd: 0,
         shift: false,
         focus: -1,                       // the place the controller is on (index into the last frame's places), -1: none yet
         controller: false,
@@ -46,9 +49,13 @@ function keyboardSheet(opts) {
         type(ch) {
             if (locked()) return null;
             if (ch === 'shift') this.shift = !this.shift;
-            else if (ch === 'bksp') this.text = this.text.slice(0, -1);
-            else if (ch === 'clear') this.text = '';
-            else if (this.text.length < MAX_LEN) this.text += ch;
+            else if (ch === 'bksp') {
+                if (this.cursor > 0) { this.text = this.text.slice(0, this.cursor - 1) + this.text.slice(this.cursor); this.cursor--; }
+            } else if (ch === 'clear') { this.text = ''; this.cursor = 0; this.viewStart = 0; }
+            else if (this.text.length < MAX_LEN) {
+                this.text = this.text.slice(0, this.cursor) + ch + this.text.slice(this.cursor);
+                this.cursor += ch.length;
+            }
             return null;
         },
         done(text) {
@@ -70,14 +77,39 @@ function keyboardSheet(opts) {
             r.roundRect(MARGIN, fy, fw, bh, 16, withAlpha('#ffffff', 0.09));
             r.strokeRoundRect(MARGIN, fy, fw, bh, 16, 2, lock ? withAlpha('#ffffff', 0.2) : S);
             const size = 32, tx = MARGIN + 24, room = fw - 48;
-            if (this.text) {
-                // the end of a long text stays in view (the start goes)
-                let s = this.text;
-                while (s.length > 1 && r.textWidth(s, size, { literal: true }) > room - 16) s = s.slice(1);
-                r.text(s, tx, fy + bh / 2 + 11, size, t.text, { literal: true });
-                const cx = tx + r.textWidth(s, size, { literal: true }) + 4;
-                if (!lock && Math.floor(Date.now() / 530) % 2 === 0) r.fillRect(cx, fy + 14, 3, bh - 28, S);
-            } else r.text(o.hint || '', tx, fy + bh / 2 + 11, size, t.dim, { literal: true });
+            // Keep the insertion point visible and use the same font metrics for
+            // drawing and hit-testing, so a tap lands beside the nearest glyph.
+            const fits = (s) => r.textWidth(s, size, { literal: true }) <= room - 16;
+            let viewStart = Math.max(0, Math.min(this.viewStart, this.text.length));
+            if (this.cursor < viewStart) viewStart = this.cursor;
+            let viewEnd = viewStart;
+            while (viewEnd < this.text.length && fits(this.text.slice(viewStart, viewEnd + 1))) viewEnd++;
+            if (this.cursor > viewEnd) {
+                viewStart = this.cursor;
+                while (viewStart > 0 && fits(this.text.slice(viewStart - 1, this.cursor))) viewStart--;
+                viewEnd = viewStart;
+                while (viewEnd < this.text.length && fits(this.text.slice(viewStart, viewEnd + 1))) viewEnd++;
+            }
+            this.viewStart = viewStart;
+            this.viewEnd = viewEnd;
+            const shown = this.text.slice(viewStart, viewEnd);
+            targets.push({ x: MARGIN, y: fy, w: fw, h: bh, act: (px) => {
+                const local = Math.max(0, Math.min(room, px - tx));
+                let nearest = 0, distance = Infinity;
+                for (let i = 0; i <= shown.length; i++) {
+                    const edge = r.textWidth(shown.slice(0, i), size, { literal: true });
+                    const d = Math.abs(edge - local);
+                    if (d < distance) { nearest = i; distance = d; }
+                }
+                this.cursor = viewStart + nearest;
+                this.viewStart = viewStart;
+                return null;
+            } });
+            if (this.text) r.text(shown, tx, fy + bh / 2 + 11, size, t.text, { literal: true });
+            else r.text(o.hint || '', tx, fy + bh / 2 + 11, size, t.dim, { literal: true });
+            const cursorInView = this.cursor >= viewStart && this.cursor <= viewEnd;
+            const cursorX = tx + r.textWidth(this.text.slice(viewStart, Math.min(this.cursor, viewEnd)), size, { literal: true });
+            if (!lock && cursorInView && Math.floor(Date.now() / 530) % 2 === 0) r.fillRect(cursorX + 1, fy + 14, 3, bh - 28, S);
             const pill = (key, x, label, primary, act) => {
                 const on = lit(key) || pressed === key;
                 r.roundRect(x, fy, bw, bh, bh / 2, on ? withAlpha(S, 0.9) : primary ? withAlpha(S, 0.55) : withAlpha('#ffffff', 0.1));

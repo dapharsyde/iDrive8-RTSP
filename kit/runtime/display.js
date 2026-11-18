@@ -582,7 +582,7 @@ class Display {
                 if (bar && was === key) { this._click(bar.id); return; }
                 if (this.sheet) {
                     const i = (this.sheetTargets || []).findIndex(inside);
-                    if (i >= 0 && was === key) this._sheetResult(() => this.sheetTargets[i].act());
+                    if (i >= 0 && was === key) this._sheetResult(() => this.sheetTargets[i].act(sx, sy));
                     return;
                 }
                 if (was && was.indexOf('bar:') === 0) return;
